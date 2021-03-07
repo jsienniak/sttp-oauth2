@@ -14,7 +14,7 @@ inThisBuild(
       Developer(
         "kubukoz",
         "Jakub Kozłowski",
-        "j.kozlowski@ocado.com",
+        "kubukoz@gmail.com",
         url("https://github.com/kubukoz")
       ),
       Developer(
@@ -28,15 +28,14 @@ inThisBuild(
   )
 )
 
-def crossPlugin(x: sbt.librarymanagement.ModuleID) = compilerPlugin(x.cross(CrossVersion.full))
-
 val Scala212 = "2.12.12"
 val Scala213 = "2.13.5"
+val Scala3 = "3.0.0-RC1"
 
 val GraalVM11 = "graalvm-ce-java11@20.3.0"
 
 ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
+ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
 ThisBuild / githubWorkflowJavaVersions := Seq(GraalVM11)
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(List("test", "mimaReportBinaryIssues"))
@@ -57,7 +56,7 @@ ThisBuild / githubWorkflowEnv ++= List("PGP_PASSPHRASE", "PGP_SECRET", "SONATYPE
 
 val Versions = new {
   val catsCore = "2.4.2"
-  val circe = "0.13.0"
+  val circe = "0.14.0-M4"
   val kindProjector = "0.11.3"
   val scalaTest = "3.2.5"
   val sttp = "3.1.7"
@@ -76,10 +75,6 @@ val commonDependencies = {
     "io.circe" %% "circe-refined" % Versions.circe
   )
 
-  val plugins = Seq(
-    compilerPlugin("org.typelevel" % "kind-projector" % Versions.kindProjector cross CrossVersion.full)
-  )
-
   val sttp = Seq(
     "com.softwaremill.sttp.client3" %% "core" % Versions.sttp,
     "com.softwaremill.sttp.client3" %% "circe" % Versions.sttp
@@ -89,13 +84,14 @@ val commonDependencies = {
     "eu.timepit" %% "refined" % Versions.refined
   )
 
-  cats ++ circe ++ sttp ++ refined ++ plugins
+  cats ++ circe ++ sttp ++ refined
 }
 
 val oauth2Dependencies = {
   val testDependencies = Seq(
-    "org.scalatest" %% "scalatest" % Versions.scalaTest,
-    "io.circe" %% "circe-literal" % Versions.circe
+    "org.scalatest" %% "scalatest" % Versions.scalaTest
+    // todo - circe-literal isn't built for 3.x yest
+    // "io.circe" %% "circe-literal" % Versions.circe
   ).map(_ % Test)
 
   commonDependencies ++ testDependencies
@@ -105,9 +101,14 @@ val mimaSettings = mimaPreviousArtifacts := Set(
   // organization.value %% name.value % "0.3.0" // TODO Define a process for resetting this after release
 )
 
+def plugins(isDotty: Boolean) =
+  if (isDotty) Nil
+  else Seq(compilerPlugin("org.typelevel" % "kind-projector" % Versions.kindProjector cross CrossVersion.full))
+
 lazy val oauth2 = project.settings(
   name := "sttp-oauth2",
   libraryDependencies ++= oauth2Dependencies,
+  libraryDependencies ++= plugins(isDotty.value),
   mimaSettings
 )
 
