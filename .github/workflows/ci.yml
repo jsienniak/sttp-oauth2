@@ -74,7 +74,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [3.0.0-RC1]
+        scala: [2.13.5]
         java: [graalvm-ce-java11@20.3.0]
     runs-on: ${{ matrix.os }}
     steps:
